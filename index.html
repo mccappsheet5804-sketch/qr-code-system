@@ -113,7 +113,6 @@
                     <h4>Scan QR Code</h4>
                     <div id="qr-code-scanner" style="width: 300px; height: 300px;"></div>
                     <p id="result"></p>
-                    <button class="btn btn-primary mt-2" id="get-gps">Get GPS Info</button>
                 </div>
             </div>
             <div id="tab4" class="tab-pane">Content for 地圖 tab.</div>
@@ -197,7 +196,7 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, email, password);
                     const user = userCredential.user;
-                    $('body').addClass('d-flex justify-content-start');
+                    $('body').addClass('d-flex justify-content-start mt-4');
                     $('.tab-content').addClass('active');
                     $('#auth-message').text('Login successful! Welcome back, ' + user.email);
                     $('#auth-card').hide(); // Hide the login form
@@ -208,19 +207,17 @@
                         scanner: {},
                         map: {},
                     }
-                    injectScanContent(); // Initialize QR scanning functionality
+
+                    await initializeQRScanner();
                 } catch (error) {
                     $('#auth-message').text(error.message);
                 }
             }
 
-            async function injectScanContent() {
-                // Initialize the QR scanner
-                await initializeQRScanner();
-            }
-
             async function initializeQRScanner() {
                 const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+                    qrCodeScanner.clear();
+                    
                     const gps = await getGPSInfo();
                     window.data.scanner = { decodedText, gps: gps };
                     alert(JSON.stringify(window.data.scanner, null, 2));
