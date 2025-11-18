@@ -221,7 +221,7 @@
 
             async function initializeQRScanner() {
                 const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
-                    const gps = getGPSInfo();
+                    const gps = await getGPSInfo();
                     window.data.scanner = { decodedText, gps: gps };
                     alert(JSON.stringify(window.data.scanner, null, 2));
                 };
