@@ -249,7 +249,7 @@
 
             async function getGPSInfo() {
                 if (navigator.geolocation) {
-                    await navigator.geolocation.getCurrentPosition(
+                    return await navigator.geolocation.getCurrentPosition(
                         (position) => {
                             return position;
                         },
