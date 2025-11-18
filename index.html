@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css"
+        integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.min.js"
+        integrity="sha512-nKXmKvJyiGQy343jatQlzDprflyB5c+tKCzGP3Uq67v+lmzfnZUi/ZT+fc6ITZfSC5HhaBKUIvr/nTLCV+7F+Q=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <style>
+        body {
+            background: linear-gradient(to bottom, #d9e8f5, #f0f4ff);
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            flex-direction: column;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .form-outline {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        input:focus+.form-label,
+        input:not(:placeholder-shown)+.form-label {
+            top: -10px;
+            left: 10px;
+            font-size: 12px;
+            color: #007BFF;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-pane {
+            padding: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="auth-card" id="auth-card">
+        <h2 class="text-center" id="form-title">Login</h2>
+        <form id="auth-form" class="mt-4">
+            <div class="form-outline">
+                <input type="email" id="username" class="form-control" placeholder=" " required
+                    value="test@gmail.com" />
+                <label class="form-label" for="username">Email address</label>
+            </div>
+            <div class="form-outline">
+                <input type="password" id="password" class="form-control" placeholder=" " required
+                    value="Password123" />
+                <label class="form-label" for="password">Password</label>
+            </div>
+
+            <div class="form-outline" id="confirmed-password-container" style="display: none;">
+                <input type="password" id="password-confirm" class="form-control" placeholder=" " required
+                    value="Password123" />
+                <label class="form-label" for="password-confirm">Confirmed Password</label>
+            </div>
+            <button type="button" id="auth-btn" class="btn btn-primary btn-block mb-4">Login</button>
+            <div class="text-center mb-3">
+                <p><span id="membership">Not a member?</span> <a href="#!" id="toggle-btn">Register</a></p>
+            </div>
+            <p class="text-danger text-center" id="auth-message"></p>
+        </form>
+        <div id="dummy-form" class="d-flex justify-content-center align-items-center" style="visibility: hidden">
+            <div>Loading...</div>
+        </div>
+    </div>
+
+    <div id="tabs" class="container mt-4" style="display: none;">
+        <ul class="nav nav-tabs">
+            <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tab1">角色</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab2">問題</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab3">掃瞄</a></li>
+            <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tab4">地圖</a></li>
+        </ul>
+        <div class="tab-content mt-2">
+            <div id="tab1" class="tab-pane active">Content for 角色 tab.</div>
+            <div id="tab2" class="tab-pane">Content for 問題 tab.</div>
+            <div id="tab3" class="tab-pane" id="scan-content">
+                <div>
+                    <h4>Scan QR Code</h4>
+                    <div id="qr-code-scanner" style="width: 300px; height: 300px;"></div>
+                    <p id="result"></p>
+                    <button class="btn btn-primary mt-2" id="get-gps">Get GPS Info</button>
+                </div>
+            </div>
+            <div id="tab4" class="tab-pane">Content for 地圖 tab.</div>
+        </div>
+    </div>
+
+    <script type="module" defer>
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYjHCZYAQLX1RIkBhqLe8gPN8x2QKNFxs",
+            authDomain: "qr-code-system-1f02a.firebaseapp.com",
+            projectId: "qr-code-system-1f02a",
+            storageBucket: "qr-code-system-1f02a.firebasestorage.app",
+            messagingSenderId: "744581256828",
+            appId: "1:744581256828:web:b2bfd4a421b6ab7aa75bf9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        $(document).ready(function () {
+            let isLogin = true;
+
+            $('#toggle-btn').on('click', toggleForm);
+
+            function toggleForm() {
+                isLogin = !isLogin;
+                $('#form-title').text(isLogin ? 'Login' : 'Register');
+                $('#auth-btn').text(isLogin ? 'Sign in' : 'Register');
+                $('#toggle-btn').text(isLogin ? 'Register' : 'Login');
+                $('#membership').text(isLogin ? 'Not a member?' : 'Already a member?');
+                $('#auth-message').text('');
+
+                if (isLogin) {
+                    document.querySelector('#confirmed-password-container').style.display = 'none';
+                } else {
+                    document.querySelector('#confirmed-password-container').style.display = 'block';
+                }
+
+                $('#confirm-password-container').toggle(isLogin);
+            }
+
+            $('#auth-btn').on('click', async function () {
+                $("#dummy-form").css('visibility', 'visible');
+                $("#auth-form").css('visibility', 'hidden');
+
+                const username = $('#username').val();
+                const password = $('#password').val();
+                const passwordConfirm = $('#password-confirm').val();
+
+                if (isLogin) {
+                    await authenticate(username, password);
+                } else {
+                    if (password === passwordConfirm) {
+                        await register(username, password);
+                    } else {
+                        $('#auth-message').text('Passwords do not match.');
+                    }
+                }
+
+                $("#dummy-form").css('visibility', 'hidden');
+                $("#auth-form").css('visibility', 'visible');
+            });
+
+            async function register(email, password) {
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    $('#auth-message').text('Registration successful! Welcome, ' + userCredential.user.email);
+                    setTimeout(() => {
+                        toggleForm();
+                    }, 200);
+                } catch (error) {
+                    $('#auth-message').text(error.message);
+                }
+            }
+
+            async function authenticate(email, password) {
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+                    $('body').addClass('d-flex justify-content-start');
+                    $('.tab-content').addClass('active');
+                    $('#auth-message').text('Login successful! Welcome back, ' + user.email);
+                    $('#auth-card').hide(); // Hide the login form
+                    $('#tabs').show(); // Show the tabs
+                    injectScanContent(); // Initialize QR scanning functionality
+                } catch (error) {
+                    $('#auth-message').text(error.message);
+                }
+            }
+
+            async function injectScanContent() {
+                // Initialize the QR scanner
+                await initializeQRScanner();
+                // Uncomment the line below if you want to bind a GPS retrieval function.
+                // $('#get-gps').on('click', getGPSInfo);
+            }
+
+            async function initializeQRScanner() {
+                const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                    // Display the decoded QR code text
+                    $('#result').text(`Decoded QR Code: ${decodedText}`);
+                };
+
+                // Create an instance of Html5QrcodeScanner
+                const qrCodeScanner = new Html5QrcodeScanner(
+                    "qr-code-scanner",
+                    {
+                        fps: 10,
+                        qrbox: 250,
+                        rememberLastUsedCamera: true
+                    }
+                );
+
+                // Initialize the QR scanner and render it
+                qrCodeScanner
+                    .render(
+                        qrCodeSuccessCallback,
+                        (error) => {
+                            console.error("Error during QR code scanning:", error);
+                        }
+                    );
+            }
+
+            async function getGPSInfo() {
+                if (navigator.geolocation) {
+                    await navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            // Handle GPS position
+                            window.position = position;
+                            console.log(position.coords);
+                        },
+                        (error) => {
+                            $('#auth-message').text(`Error retrieving location: ${error.message}`);
+                        }
+                    );
+                } else {
+                    $('#auth-message').text("Geolocation is not supported by this browser.");
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
