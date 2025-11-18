@@ -202,6 +202,12 @@
                     $('#auth-message').text('Login successful! Welcome back, ' + user.email);
                     $('#auth-card').hide(); // Hide the login form
                     $('#tabs').show(); // Show the tabs
+                    window.data = {
+                        character: {},
+                        question: {},
+                        scanner: {},
+                        map: {},
+                    }
                     injectScanContent(); // Initialize QR scanning functionality
                 } catch (error) {
                     $('#auth-message').text(error.message);
@@ -217,8 +223,7 @@
 
             async function initializeQRScanner() {
                 const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                    // Display the decoded QR code text
-                    $('#result').text(`Decoded QR Code: ${decodedText}`);
+                    window.data.scanner = { decodedText, gps: getGPSInfo() };
                 };
 
                 // Create an instance of Html5QrcodeScanner
@@ -245,16 +250,14 @@
                 if (navigator.geolocation) {
                     await navigator.geolocation.getCurrentPosition(
                         (position) => {
-                            // Handle GPS position
-                            window.position = position;
-                            console.log(position.coords);
+                            return position;
                         },
                         (error) => {
-                            $('#auth-message').text(`Error retrieving location: ${error.message}`);
+                            return false;
                         }
                     );
                 } else {
-                    $('#auth-message').text("Geolocation is not supported by this browser.");
+                    return null;
                 }
             }
         });
