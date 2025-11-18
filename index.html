@@ -135,9 +135,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-
         $(document).ready(function () {
+
             let isLogin = true;
+            let isScanning = true;
 
             $('#toggle-btn').on('click', toggleForm);
 
@@ -216,11 +217,20 @@
 
             async function initializeQRScanner() {
                 const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
-                    qrCodeScanner.clear();
-                    
+                    if (!isScanning) return;
+
                     const gps = await getGPSInfo();
                     window.data.scanner = { decodedText, gps: gps };
                     alert(JSON.stringify(window.data.scanner, null, 2));
+
+                    // Set the flag to stop further processing
+                    isScanning = false;
+
+                    // Optionally clear if you want to remove the video feed
+                    qrCodeScanner.clear();
+
+                    // Hide the QR code scanner element
+                    document.getElementById("qr-code-scanner").style.display = "none";
                 };
 
                 // Create an instance of Html5QrcodeScanner
