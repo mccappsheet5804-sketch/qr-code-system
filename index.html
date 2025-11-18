@@ -217,13 +217,12 @@
             async function injectScanContent() {
                 // Initialize the QR scanner
                 await initializeQRScanner();
-                // Uncomment the line below if you want to bind a GPS retrieval function.
-                // $('#get-gps').on('click', getGPSInfo);
             }
 
             async function initializeQRScanner() {
-                const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-                    window.data.scanner = { decodedText, gps: getGPSInfo() };
+                const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+                    const gps = await getGPSInfo();
+                    window.data.scanner = { decodedText, gps: gps };
                     alert(JSON.stringify(window.data.scanner, null, 2));
                 };
 
