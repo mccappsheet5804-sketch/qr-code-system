@@ -111,8 +111,9 @@
             <div id="tab3" class="tab-pane" id="scan-content">
                 <div>
                     <h4>Scan QR Code</h4>
-                    <div id="qr-code-scanner" style="width: 300px; height: 300px;"></div>
-                    <p id="result"></p>
+                    <div id="scanner-qr-code" style="width: 300px; height: 300px;"></div>
+                    <p id="scanner-result"></p>
+                    <p id="scanner-output"></p>
                 </div>
             </div>
             <div id="tab4" class="tab-pane">Content for 地圖 tab.</div>
@@ -221,26 +222,24 @@
 
                     const gps = await getGPSInfo();
                     window.data.scanner = { decodedText, gps: gps };
-                    alert(JSON.stringify(window.data.scanner, null, 2));
+                    document.querySelector("#scanner-output").innerText = stringify(window.data.scanner);
 
                     // Set the flag to stop further processing
                     isScanning = false;
-
-                    // Optionally clear if you want to remove the video feed
-                    qrCodeScanner.clear();
 
                     $("#html5-qrcode-button-camera-stop").click();
                 };
 
                 // Create an instance of Html5QrcodeScanner
                 const qrCodeScanner = new Html5QrcodeScanner(
-                    "qr-code-scanner",
+                    "scanner-qr-code",
                     {
                         fps: 10,
                         qrbox: 250,
                         rememberLastUsedCamera: true
                     }
                 );
+                console.log(qrCodeScanner)
 
                 // Initialize the QR scanner and render it
                 qrCodeScanner
