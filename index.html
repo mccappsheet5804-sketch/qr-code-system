@@ -224,6 +224,7 @@
             async function initializeQRScanner() {
                 const qrCodeSuccessCallback = (decodedText, decodedResult) => {
                     window.data.scanner = { decodedText, gps: getGPSInfo() };
+                    alert(JSON.stringify(window.data.scanner, null, 2));
                 };
 
                 // Create an instance of Html5QrcodeScanner
